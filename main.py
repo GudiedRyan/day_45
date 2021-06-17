@@ -1,5 +1,7 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import requests 
+import os
+import smtplib
 
 app = Flask(__name__)
 
@@ -13,9 +15,26 @@ def home():
 def about():
     return render_template("about.html")
 
-@app.route('/contact')
+@app.route('/contact', methods=['GET', 'POST'])
 def contact():
-    return render_template("contact.html")
+    if request.method == 'GET':
+        return render_template("contact.html", head = "Contact Me")
+    else:
+        name = request.form['name']
+        email = request.form['email']
+        phone = request.form['phone']
+        message = request.form['message']
+
+        with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
+            connection.starttls()
+            connection.login(user='yesmanvong@gmail.com', password=os.environ['yesmanvongpass'])
+            connection.sendmail(
+                from_addr=email,
+                to_addrs="yesmanvong@gmail.com",
+                msg=f"Subject: {name} would like to get in touch \n\n{message}\nPlease get back to me at either {email} or {phone}."
+            )
+
+        return render_template("contact.html", head = "Successfully sent your message!")
 
 @app.route('/post/<int:id>')
 def post(id):
@@ -23,6 +42,7 @@ def post(id):
     all_posts = response.json()
     post = all_posts[id]
     return render_template("post.html", post=post)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
